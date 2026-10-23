@@ -103,6 +103,19 @@ function Validate-Name {
     }
 }
 
+function Ensure-UserShellFolders {
+    param($PROFILE_DIR)
+    $realUser = [Environment]::GetFolderPath("UserProfile")
+    $folders = @("Desktop", "Documents", "Downloads")
+    foreach ($f in $folders) {
+        $dest = Join-Path $PROFILE_DIR $f
+        $src = Join-Path $realUser $f
+        if ((Test-Path $src) -and !(Test-Path $dest)) {
+            New-Item -ItemType Junction -Path $dest -Target $src -ErrorAction SilentlyContinue | Out-Null
+        }
+    }
+}
+
 function Invoke-CreateProfile {
     param($PROFILE)
     $PROFILE_DIR = "$BASE\$PROFILE"
@@ -110,6 +123,7 @@ function Invoke-CreateProfile {
     New-Item -ItemType Directory -Force -Path "$PROFILE_DIR\.antigravity\extensions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$PROFILE_DIR\AppData\Roaming" | Out-Null
     New-Item -ItemType Directory -Force -Path "$PROFILE_DIR\AppData\Local" | Out-Null
+    Ensure-UserShellFolders $PROFILE_DIR
 }
 
 function Invoke-CreateAuthOnlyProfile {
@@ -119,6 +133,7 @@ function Invoke-CreateAuthOnlyProfile {
     $defaultExt = Get-DefaultExtensionsDir
 
     New-Item -ItemType Directory -Force -Path $PROFILE_DIR | Out-Null
+    Ensure-UserShellFolders $PROFILE_DIR
 
     # Mark as auth-only
     New-Item -ItemType File -Force -Path "$PROFILE_DIR\.auth-only" | Out-Null
@@ -163,6 +178,8 @@ function Invoke-LaunchProfile {
         Write-Error "Error: Antigravity.exe not found"
         exit 1
     }
+
+    Ensure-UserShellFolders $PROFILE_DIR
 
     Write-Host "Launching Antigravity profile '$PROFILE'"
     
