@@ -22,8 +22,11 @@ $BASE = if ($env:MULTIGRAVITY_HOME) { $env:MULTIGRAVITY_HOME } else { "$env:USER
 function Find-Antigravity {
     $paths = @(
         "$env:LOCALAPPDATA\Programs\Antigravity\Antigravity.exe",
+        "$env:LOCALAPPDATA\Programs\Antigravity IDE\Antigravity IDE.exe",
         "$env:PROGRAMFILES\Antigravity\Antigravity.exe",
-        "${env:ProgramFiles(x86)}\Antigravity\Antigravity.exe"
+        "$env:PROGRAMFILES\Antigravity IDE\Antigravity IDE.exe",
+        "${env:ProgramFiles(x86)}\Antigravity\Antigravity.exe",
+        "${env:ProgramFiles(x86)}\Antigravity IDE\Antigravity IDE.exe"
     )
     foreach ($p in $paths) {
         if (Test-Path $p) { return $p }
@@ -32,6 +35,12 @@ function Find-Antigravity {
     # Try to find in PATH
     $exeCommand = Get-Command antigravity.exe -ErrorAction SilentlyContinue
     if ($exeCommand) { return $exeCommand.Source }
+
+    $exeCommandIde = Get-Command "antigravity ide.exe" -ErrorAction SilentlyContinue
+    if ($exeCommandIde) { return $exeCommandIde.Source }
+
+    $cmdCommand = Get-Command "antigravity-ide.cmd" -ErrorAction SilentlyContinue
+    if ($cmdCommand) { return $cmdCommand.Source }
     
     return $null
 }
@@ -201,6 +210,13 @@ function Invoke-CreateShortcut {
     if ([string]::IsNullOrEmpty($SCRIPT_PATH)) {
         $cmdObj = Get-Command multigravity -ErrorAction SilentlyContinue
         if ($cmdObj) { $SCRIPT_PATH = $cmdObj.Source }
+    }
+    if ([string]::IsNullOrEmpty($SCRIPT_PATH)) {
+        if (Test-Path "$env:USERPROFILE\.local\bin\multigravity.cmd") {
+            $SCRIPT_PATH = "$env:USERPROFILE\.local\bin\multigravity.cmd"
+        } elseif (Test-Path "$env:USERPROFILE\.local\bin\multigravity.ps1") {
+            $SCRIPT_PATH = "$env:USERPROFILE\.local\bin\multigravity.ps1"
+        }
     }
     
     $WshShell = New-Object -comObject WScript.Shell
@@ -438,7 +454,7 @@ function Invoke-DoctorCli {
 }
 
 function Invoke-UpdateCli {
-    $script_url = "https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/multigravity.ps1"
+    $script_url = "https://raw.githubusercontent.com/Pulkit7070/multigravity-pro/main/multigravity.ps1"
     $target = $MyInvocation.MyCommand.Path
     if ([string]::IsNullOrEmpty($target)) {
         $cmdObj = Get-Command multigravity -ErrorAction SilentlyContinue
@@ -573,7 +589,7 @@ function Invoke-StatusProfiles {
         # Check if running
         $status = "stopped"
         $dataDir = "$($p.FullName)\AppData\Roaming\Antigravity"
-        $procs = Get-Process -Name "Antigravity" -ErrorAction SilentlyContinue
+        $procs = Get-Process -Name "Antigravity*", "Antigravity IDE*" -ErrorAction SilentlyContinue
         if ($procs) {
             foreach ($proc in $procs) {
                 try {
