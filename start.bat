@@ -2,11 +2,19 @@
 setlocal EnableDelayedExpansion
 title Multigravity Pro Launcher
 
-:: If arguments are provided, directly forward them to multigravity
-if not "%~1"=="" (
-    call multigravity %*
-    exit /b %ERRORLEVEL%
+:: If launched directly without arguments (e.g. from CosmoLauncher or File Explorer),
+:: ensure it runs inside an interactive, visible terminal window instead of a hidden process.
+if "%~1"=="" (
+    start "Multigravity Pro" cmd.exe /c call "%~f0" --menu
+    exit /b 0
 )
+
+:: If internal menu flag is passed, jump straight to the interactive menu
+if "%~1"=="--menu" goto menu
+
+:: If arguments are provided, directly forward them to multigravity
+call multigravity %*
+exit /b %ERRORLEVEL%
 
 :menu
 cls
