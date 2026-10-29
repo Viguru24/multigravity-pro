@@ -47,13 +47,67 @@ if errorlevel 1 goto launch_profile
 goto menu
 
 :launch_profile
+cls
+echo ======================================================
+echo               SELECT A PROFILE TO LAUNCH             
+echo ======================================================
 echo.
-set "pname="
-set /p "pname=Enter the profile name to launch: "
-if not defined pname goto menu
+set "PDIR=%USERPROFILE%\AntigravityProfiles"
+if defined MULTIGRAVITY_HOME set "PDIR=%MULTIGRAVITY_HOME%"
+
+set /a count=0
+for /d %%D in ("%PDIR%\*") do (
+    set "fname=%%~nxD"
+    if not "!fname:~0,1!"=="." (
+        set /a count+=1
+        set "prof_!count!=!fname!"
+        echo   [!count!] !fname!
+    )
+)
+
+if %count%==0 (
+    echo   No isolated profiles found in %PDIR%.
+)
+
+echo.
+echo   [D] Default / Primary Antigravity (Original Account)
+echo   [B] Back to Main Menu
+echo.
+set "pchoice="
+set /p "pchoice=Select an option (1-%count%, D, or B): "
+if not defined pchoice goto menu
+if /i "!pchoice!"=="B" goto menu
+if /i "!pchoice!"=="D" (
+    cls
+    echo Launching Default / Primary Antigravity...
+    if exist "%LOCALAPPDATA%\Programs\Antigravity\Antigravity.exe" (
+        start "" "%LOCALAPPDATA%\Programs\Antigravity\Antigravity.exe"
+    ) else (
+        start "" "antigravity"
+    )
+    goto end
+)
+
+:: If a number was entered, resolve to profile name
+if defined prof_!pchoice! (
+    set "pname=!prof_%pchoice%!"
+) else (
+    set "pname=!pchoice!"
+)
+
 cls
 echo Launching profile "!pname!"...
-call multigravity !pname!
+call multigravity "!pname!"
+if errorlevel 1 (
+    echo.
+    echo ------------------------------------------------------
+    echo [ERROR] Could not launch profile "!pname!".
+    echo Make sure the profile name matches an existing profile.
+    echo ------------------------------------------------------
+    echo.
+    pause
+    goto menu
+)
 goto end
 
 :create_full
@@ -74,7 +128,13 @@ if errorlevel 2 goto menu
 if errorlevel 1 (
     cls
     echo Launching profile "!pname!"...
-    call multigravity !pname!
+    call multigravity "!pname!"
+    if errorlevel 1 (
+        echo.
+        echo [ERROR] Failed to launch profile "!pname!".
+        pause
+        goto menu
+    )
     goto end
 )
 goto menu
@@ -97,7 +157,13 @@ if errorlevel 2 goto menu
 if errorlevel 1 (
     cls
     echo Launching profile "!pname!"...
-    call multigravity !pname!
+    call multigravity "!pname!"
+    if errorlevel 1 (
+        echo.
+        echo [ERROR] Failed to launch profile "!pname!".
+        pause
+        goto menu
+    )
     goto end
 )
 goto menu
